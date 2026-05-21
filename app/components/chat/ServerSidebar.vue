@@ -6,7 +6,7 @@ const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
 <template>
   <aside class="w-[80px] bg-white/50 dark:bg-black/20 backdrop-blur-md flex flex-col items-center py-6 gap-4 border-r border-black/5 dark:border-white/5 shrink-0 z-20">
     <UTooltip
-      text="Accueil"
+      :text="$t('sidebar.home')"
       placement="right"
     >
       <UButton
@@ -54,7 +54,7 @@ const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
     </template>
 
     <UTooltip
-      text="Nouveau serveur"
+      :text="$t('sidebar.newServer')"
       placement="right"
     >
       <button

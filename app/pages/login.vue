@@ -1,11 +1,34 @@
 <script setup lang="ts">
+const { locale, setLocale } = useI18n()
 definePageMeta({
   layout: false
 })
 </script>
 
 <template>
-  <div class="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white">
+  <div class="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white relative">
+    <!-- Language Switcher in the top right -->
+    <div class="absolute top-6 right-6 flex gap-1.5 bg-white dark:bg-zinc-800 p-1 rounded-xl shadow-sm border border-black/5 dark:border-white/5">
+      <UButton
+        size="xs"
+        :variant="locale === 'fr' ? 'solid' : 'ghost'"
+        color="neutral"
+        class="font-semibold rounded-lg px-3"
+        @click="setLocale('fr')"
+      >
+        FR
+      </UButton>
+      <UButton
+        size="xs"
+        :variant="locale === 'en' ? 'solid' : 'ghost'"
+        color="neutral"
+        class="font-semibold rounded-lg px-3"
+        @click="setLocale('en')"
+      >
+        EN
+      </UButton>
+    </div>
+
     <UCard class="w-full max-w-sm">
       <div class="text-center mb-6">
         <div class="w-16 h-16 bg-primary-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -15,10 +38,10 @@ definePageMeta({
           />
         </div>
         <h1 class="text-2xl font-bold">
-          Connexion
+          {{ $t('auth.login') }}
         </h1>
         <p class="text-zinc-500 dark:text-zinc-400 text-sm mt-2">
-          Connectez-vous à ChatLive
+          {{ $t('auth.subtitle') }}
         </p>
       </div>
 
@@ -30,7 +53,7 @@ definePageMeta({
         block
         external
       >
-        Continuer avec GitHub
+        {{ $t('auth.github') }}
       </UButton>
 
       <UButton
@@ -42,8 +65,24 @@ definePageMeta({
         external
         class="mt-2"
       >
-        Connexion Dev (Test Local)
+        {{ $t('auth.dev') }}
       </UButton>
+
+      <div class="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800 text-center">
+        <p class="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
+          {{ locale === 'fr' ? 'En vous connectant, vous acceptez nos ' : 'By logging in, you accept our ' }}
+          <NuxtLink
+            to="/terms"
+            class="text-primary-500 dark:text-primary-400 hover:underline font-medium"
+          >{{ locale === 'fr' ? "Conditions d'Utilisation" : 'Terms of Use' }}</NuxtLink>
+          {{ locale === 'fr' ? ' et notre ' : ' and our ' }}
+          <NuxtLink
+            to="/privacy"
+            class="text-primary-500 dark:text-primary-400 hover:underline font-medium"
+          >{{ locale === 'fr' ? 'Politique de Confidentialité' : 'Privacy Policy' }}</NuxtLink>
+          {{ locale === 'fr' ? ' relative à la protection de vos données personnelles (RGPD).' : ' regarding the protection of your personal data (GDPR).' }}
+        </p>
+      </div>
     </UCard>
   </div>
 </template>

@@ -35,16 +35,16 @@ async function createChannel() {
   <UModal
     v-model:open="isAddChannelOpen"
     :close="false"
-    title="Créer un nouveau salon"
+    :title="$t('modal.createChannelTitle')"
   >
     <template #body>
       <p class="text-sm text-zinc-500 mb-6">
-        Les salons permettent d'organiser vos discussions par thèmes.
+        {{ $t('modal.createChannelDesc') }}
       </p>
       <input
         v-model="newChannelName"
         type="text"
-        placeholder="Nom du salon (ex: general)"
+        :placeholder="$t('modal.channelPlaceholder')"
         autofocus
         class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
         @keyup.enter="createChannel"
@@ -57,14 +57,14 @@ async function createChannel() {
           color="neutral"
           @click="isAddChannelOpen = false"
         >
-          Annuler
+          {{ $t('modal.cancel') }}
         </UButton>
         <UButton
           color="primary"
           :loading="isCreating"
           @click="createChannel"
         >
-          Créer
+          {{ $t('modal.create') }}
         </UButton>
       </div>
     </template>

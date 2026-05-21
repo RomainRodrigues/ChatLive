@@ -8,6 +8,13 @@
       "when": 1779397904124,
       "tag": "0000_next_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779402294653,
+      "tag": "0001_loud_enchantress",
+      "breakpoints": true
     }
   ]
 }

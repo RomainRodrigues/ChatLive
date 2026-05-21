@@ -4,17 +4,12 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     'nuxt-auth-utils',
-    '@pinia/nuxt'
+    '@pinia/nuxt',
+    '@nuxtjs/i18n'
   ],
 
   devtools: {
     enabled: true
-  },
-
-  nitro: {
-    experimental: {
-      websocket: true
-    }
   },
 
   css: ['~/assets/css/main.css'],
@@ -24,6 +19,12 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2025-01-15',
+
+  nitro: {
+    experimental: {
+      websocket: true
+    }
+  },
 
   vite: {
     optimizeDeps: {
@@ -45,5 +46,20 @@ export default defineNuxtConfig({
 
   fonts: {
     provider: 'google'
+  },
+
+  i18n: {
+    locales: [
+      { code: 'fr', name: 'Français', file: 'fr.ts' },
+      { code: 'en', name: 'English', file: 'en.ts' }
+    ],
+    defaultLocale: 'fr',
+    langDir: 'locales',
+    strategy: 'no_prefix',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+      redirectOn: 'root'
+    }
   }
 })

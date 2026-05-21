@@ -24,7 +24,7 @@ export function unregisterPeer(peer: Peer) {
   }
 }
 
-export function broadcastToChannel(channelId: string, message: any) {
+export function broadcastToChannel(channelId: string, message: unknown) {
   const peers = activePeers.get(channelId)
   if (peers) {
     const payload = typeof message === 'string' ? message : JSON.stringify(message)

@@ -28,5 +28,8 @@ onMounted(() => {
 
     <!-- Global Create Channel Modal -->
     <ModalsCreateChannelModal />
+
+    <!-- Global GDPR / User Settings Modal -->
+    <ModalsUserSettingsModal />
   </div>
 </template>

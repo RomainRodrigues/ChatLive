@@ -10,10 +10,10 @@
 
     <!-- Text Information -->
     <h1 class="text-3xl font-bold tracking-tight mb-4">
-      Bienvenue sur ChatLive
+      {{ $t('chat.welcome') }}
     </h1>
     <p class="text-zinc-500 dark:text-zinc-400 max-w-md text-lg leading-relaxed">
-      Sélectionnez un serveur dans la barre latérale gauche ou créez-en un nouveau pour commencer à discuter avec votre communauté.
+      {{ $t('chat.welcomeSubtitle') }}
     </p>
   </div>
 </template>

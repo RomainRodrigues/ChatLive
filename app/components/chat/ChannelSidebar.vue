@@ -2,6 +2,7 @@
 const chatStore = useChatStore()
 const { user, clear } = useUserSession()
 const isAddChannelOpen = useState<boolean>('isAddChannelOpen', () => false)
+const isUserSettingsOpen = useState<boolean>('isUserSettingsOpen', () => false)
 
 async function handleLogout() {
   await clear()
@@ -24,12 +25,12 @@ const activeServerName = computed(() => {
     <div class="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-1">
       <div class="flex items-center justify-between mb-2 px-3 mt-4">
         <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-          Salons
+          {{ $t('sidebar.channels') }}
         </span>
         <button
           v-if="chatStore.activeServerId"
           class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-          aria-label="Créer un salon"
+          :aria-label="$t('sidebar.createChannel')"
           @click="isAddChannelOpen = true"
         >
           <UIcon
@@ -101,12 +102,19 @@ const activeServerName = computed(() => {
           {{ user?.name || 'Utilisateur' }}
         </div>
         <div class="text-xs text-primary-500 font-medium">
-          En ligne
+          {{ $t('sidebar.online') }}
         </div>
       </div>
       <button
         class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 transition-colors cursor-pointer"
-        aria-label="Se déconnecter"
+        :aria-label="$t('sidebar.settings')"
+        @click="isUserSettingsOpen = true"
+      >
+        <UIcon name="i-lucide-settings" />
+      </button>
+      <button
+        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 transition-colors cursor-pointer"
+        :aria-label="$t('sidebar.logout')"
         @click="handleLogout"
       >
         <UIcon name="i-lucide-log-out" />

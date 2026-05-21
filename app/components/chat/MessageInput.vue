@@ -20,7 +20,7 @@ async function send() {
       <textarea
         v-model="newMessage"
         rows="1"
-        :placeholder="`Envoyer un message dans #${channelName}`"
+        :placeholder="$t('chat.placeholder', { name: channelName })"
         class="flex-1 max-h-32 min-h-[48px] bg-transparent border-none focus:ring-0 outline-none pl-4 pr-2 py-3 text-[15px] resize-none text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
         @keydown.enter.prevent="send"
       />
@@ -30,7 +30,7 @@ async function send() {
         <button
           :disabled="!newMessage.trim()"
           class="w-10 h-10 rounded-xl flex items-center justify-center bg-primary-500 text-white shadow-md disabled:opacity-50 transition-all hover:bg-primary-600 cursor-pointer disabled:cursor-not-allowed"
-          aria-label="Envoyer le message"
+          :aria-label="$t('chat.send')"
           @click="send"
         >
           <UIcon

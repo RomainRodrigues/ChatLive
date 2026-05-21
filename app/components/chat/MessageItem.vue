@@ -55,7 +55,7 @@ const formattedTime = computed(() => {
     >
       <button
         class="w-6 h-6 flex items-center justify-center rounded hover:bg-red-50 dark:hover:bg-red-950/50 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
-        aria-label="Supprimer le message"
+        :aria-label="$t('chat.deleteMessage')"
         @click="emit('delete', message.id)"
       >
         <UIcon

@@ -27,16 +27,16 @@ async function createServer() {
   <UModal
     v-model:open="isAddServerOpen"
     :close="false"
-    title="Créer un nouvel espace"
+    :title="$t('modal.createServerTitle')"
   >
     <template #body>
       <p class="text-sm text-zinc-500 mb-6">
-        Donnez un nom à votre serveur pour commencer à discuter avec votre communauté.
+        {{ $t('modal.createServerDesc') }}
       </p>
       <input
         v-model="newServerName"
         type="text"
-        placeholder="Nom du serveur"
+        :placeholder="$t('modal.serverPlaceholder')"
         autofocus
         class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
         @keyup.enter="createServer"
@@ -49,14 +49,14 @@ async function createServer() {
           color="neutral"
           @click="isAddServerOpen = false"
         >
-          Annuler
+          {{ $t('modal.cancel') }}
         </UButton>
         <UButton
           color="primary"
           :loading="isCreating"
           @click="createServer"
         >
-          Créer
+          {{ $t('modal.create') }}
         </UButton>
       </div>
     </template>

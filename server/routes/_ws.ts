@@ -5,7 +5,7 @@ export default defineWebSocketHandler({
     try {
       // Require authenticated user session before establishing the websocket connection
       await requireUserSession(event)
-    } catch (e) {
+    } catch {
       // If not authenticated, reject the connection
       return { status: 401, statusText: 'Unauthorized' }
     }
