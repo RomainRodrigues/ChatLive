@@ -6,12 +6,17 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const body = await readBody(event)
 
-  if (!body.name || !body.name.trim()) {
+  const name = String(body.name).trim()
+  if (!name) {
     throw createError({ statusCode: 400, statusMessage: 'Le nom est obligatoire.' })
   }
 
+  if (name.length > 100) {
+    throw createError({ statusCode: 400, statusMessage: 'Le nom ne peut pas dépasser 100 caractères.' })
+  }
+
   const [updatedUser] = await db.update(users)
-    .set({ name: String(body.name).trim() })
+    .set({ name })
     .where(eq(users.id, session.user.id))
     .returning()
 

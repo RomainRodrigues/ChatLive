@@ -12,6 +12,14 @@ export const servers = pgTable('servers', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  inviteCode: uuid('invite_code').defaultRandom().unique().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+})
+
+export const serverMembers = pgTable('server_members', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  serverId: uuid('server_id').references(() => servers.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
 

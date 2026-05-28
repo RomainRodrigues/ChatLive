@@ -1,6 +1,7 @@
 import { db } from '../../utils/drizzle'
 import { users, servers, messages } from '../../database/schema'
 import { eq } from 'drizzle-orm'
+import { decrypt } from '../../utils/encryption'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -37,7 +38,7 @@ export default defineEventHandler(async (event) => {
     })),
     messagesSent: userMessages.map(m => ({
       id: m.id,
-      content: m.content,
+      content: decrypt(m.content),
       channelId: m.channelId,
       createdAt: m.createdAt
     }))

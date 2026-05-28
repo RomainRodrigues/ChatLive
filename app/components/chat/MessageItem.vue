@@ -22,47 +22,49 @@ const formattedTime = computed(() => {
 </script>
 
 <template>
-  <div class="flex gap-4 group hover:bg-black/2 dark:hover:bg-white/2 p-2 rounded-xl transition-all relative">
+  <div class="group relative flex items-start gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-2xl transition-all border border-transparent hover:border-black/5 dark:hover:border-white/5">
     <!-- User Avatar -->
     <img
       v-if="message.user.avatarUrl"
       :src="message.user.avatarUrl"
       :alt="message.user.name"
-      class="w-12 h-12 rounded-2xl shadow-sm object-cover shrink-0"
+      class="w-10 h-10 rounded-full shrink-0"
     >
     <div
       v-else
-      class="w-12 h-12 rounded-2xl shadow-sm bg-primary-100 dark:bg-primary-950 text-primary-500 flex items-center justify-center font-bold text-lg shrink-0"
+      class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-500 flex items-center justify-center font-bold text-sm shrink-0"
     >
       {{ message.user.name.charAt(0).toUpperCase() }}
     </div>
 
-    <!-- Message Content Details -->
+    <!-- Message Content Container -->
     <div class="flex-1 min-w-0">
-      <div class="flex items-baseline gap-3 mb-1">
-        <span class="font-bold text-[15px] truncate">{{ message.user.name }}</span>
-        <span class="text-xs text-zinc-400 font-medium shrink-0">{{ formattedTime }}</span>
+      <div class="flex items-baseline gap-2 mb-1">
+        <span class="font-bold text-sm text-zinc-900 dark:text-white truncate">
+          {{ message.user.name }}
+        </span>
+        <span class="text-xs text-zinc-400 dark:text-zinc-500 font-medium shrink-0">
+          {{ formattedTime }}
+        </span>
       </div>
       <div class="text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words">
         {{ message.content }}
       </div>
     </div>
 
-    <!-- Delete Action Button (floating right on hover) -->
+    <!-- Floating Actions Panel -->
     <div
       v-if="message.user.id === user?.id"
-      class="opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 top-2 flex bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700 rounded-lg shadow-sm p-1 z-10"
+      class="absolute right-4 top-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
     >
-      <button
-        class="w-6 h-6 flex items-center justify-center rounded hover:bg-red-50 dark:hover:bg-red-950/50 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
+      <UButton
+        color="neutral"
+        variant="ghost"
+        icon="i-lucide-trash-2"
+        size="sm"
         :aria-label="$t('chat.deleteMessage')"
         @click="emit('delete', message.id)"
-      >
-        <UIcon
-          name="i-lucide-trash-2"
-          class="text-sm"
-        />
-      </button>
+      />
     </div>
   </div>
 </template>

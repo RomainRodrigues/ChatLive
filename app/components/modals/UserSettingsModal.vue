@@ -174,13 +174,14 @@ async function deleteAccount() {
             {{ $t('settings.displayName') }}
           </label>
           <div class="flex gap-2">
-            <input
+            <UInput
               v-model="nameInput"
               type="text"
               :placeholder="$t('settings.namePlaceholder')"
-              class="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-sm"
+              maxlength="100"
+              class="flex-1"
               @keyup.enter="saveProfile"
-            >
+            />
             <UButton
               color="primary"
               :loading="isSaving"
@@ -247,7 +248,7 @@ async function deleteAccount() {
             color="primary"
             variant="solid"
             size="sm"
-            class="rounded-xl mt-1"
+            class="mt-1"
             :loading="isExporting"
             @click="exportData"
           >
@@ -273,7 +274,7 @@ async function deleteAccount() {
               color="error"
               variant="soft"
               size="sm"
-              class="rounded-xl mt-1"
+              class="mt-1"
               @click="showDeleteConfirm = true"
             >
               {{ $t('settings.deleteBtn') }}
@@ -288,12 +289,12 @@ async function deleteAccount() {
               {{ $t('settings.deleteWarning', { word: deleteWord }) }}
             </p>
             <div class="flex gap-2">
-              <input
+              <UInput
                 v-model="deleteConfirmationText"
                 type="text"
                 :placeholder="$t('settings.deletePlaceholder', { word: deleteWord })"
-                class="flex-1 bg-white dark:bg-zinc-900 border border-red-500/30 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-red-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-sm"
-              >
+                class="flex-1"
+              />
               <UButton
                 color="error"
                 :loading="isDeleting"

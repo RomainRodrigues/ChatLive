@@ -13,7 +13,6 @@ definePageMeta({
         size="xs"
         :variant="locale === 'fr' ? 'solid' : 'ghost'"
         color="neutral"
-        class="font-semibold rounded-lg px-3"
         @click="setLocale('fr')"
       >
         FR
@@ -22,7 +21,6 @@ definePageMeta({
         size="xs"
         :variant="locale === 'en' ? 'solid' : 'ghost'"
         color="neutral"
-        class="font-semibold rounded-lg px-3"
         @click="setLocale('en')"
       >
         EN

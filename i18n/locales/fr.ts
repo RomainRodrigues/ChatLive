@@ -145,5 +145,25 @@ export default {
       content: 'Le code source de ChatLive est régi par la licence open-source spécifiée dans le projet. Les marques, logos et interfaces graphiques restent la propriété exclusive de ChatLive et de ses créateurs.'
     },
     footer: 'Conditions Générales d\'Utilisation'
+  },
+  invite: {
+    buttonTooltip: 'Inviter des membres',
+    modalTitle: 'Inviter des amis sur {server}',
+    modalDesc: 'Partagez ce lien avec vos amis pour leur donner accès à votre serveur.',
+    copyBtn: 'Copier le lien',
+    copiedBtn: 'Lien copié !',
+    toastSuccess: 'Lien copié',
+    toastSuccessDesc: 'Le lien d\'invitation a été copié dans votre presse-papiers.',
+    joiningTitle: 'Rejoindre le serveur...',
+    joiningSubtitle: 'Veuillez patienter pendant que nous vous ajoutons au serveur.',
+    joinErrorTitle: 'Erreur d\'invitation',
+    joinErrorDesc: 'Ce lien d\'invitation est invalide, expiré ou vous n\'avez pas les droits nécessaires pour rejoindre.',
+    backHome: 'Retour à l\'accueil',
+    confirmTitle: 'Rejoindre un espace',
+    confirmDesc: 'Vous avez été invité à rejoindre le serveur {server}.',
+    createdBy: 'Créé par',
+    joinBtn: 'Rejoindre le serveur',
+    cancelBtn: 'Plus tard',
+    joiningProgress: 'Rejoindre...'
   }
 }

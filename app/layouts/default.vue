@@ -31,5 +31,8 @@ onMounted(() => {
 
     <!-- Global GDPR / User Settings Modal -->
     <ModalsUserSettingsModal />
+
+    <!-- Global Invite Modal -->
+    <ModalsInviteModal />
   </div>
 </template>

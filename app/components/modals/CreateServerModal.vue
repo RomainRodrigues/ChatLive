@@ -33,14 +33,15 @@ async function createServer() {
       <p class="text-sm text-zinc-500 mb-6">
         {{ $t('modal.createServerDesc') }}
       </p>
-      <input
+      <UInput
         v-model="newServerName"
         type="text"
         :placeholder="$t('modal.serverPlaceholder')"
         autofocus
-        class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition-all text-zinc-900 dark:text-zinc-100 placeholder-zinc-400"
+        maxlength="100"
+        class="w-full"
         @keyup.enter="createServer"
-      >
+      />
     </template>
     <template #footer>
       <div class="flex justify-end gap-3">

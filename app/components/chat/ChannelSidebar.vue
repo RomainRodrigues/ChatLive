@@ -3,6 +3,7 @@ const chatStore = useChatStore()
 const { user, clear } = useUserSession()
 const isAddChannelOpen = useState<boolean>('isAddChannelOpen', () => false)
 const isUserSettingsOpen = useState<boolean>('isUserSettingsOpen', () => false)
+const isInviteOpen = useState<boolean>('isInviteOpen', () => false)
 
 async function handleLogout() {
   await clear()
@@ -17,8 +18,24 @@ const activeServerName = computed(() => {
 <template>
   <aside class="w-64 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-sm flex flex-col border-r border-black/5 dark:border-white/5 shrink-0 z-10">
     <!-- Server Name Title -->
-    <div class="h-16 flex items-center px-6 font-semibold text-lg tracking-tight border-b border-black/5 dark:border-white/5">
-      {{ activeServerName }}
+    <div class="h-16 flex items-center justify-between px-6 font-semibold text-lg tracking-tight border-b border-black/5 dark:border-white/5">
+      <span class="truncate">{{ activeServerName }}</span>
+      <UTooltip
+        v-if="chatStore.activeServerId"
+        :text="$t('invite.buttonTooltip')"
+        placement="bottom"
+      >
+        <button
+          class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-primary-500 transition-colors cursor-pointer"
+          :aria-label="$t('invite.buttonTooltip')"
+          @click="isInviteOpen = true"
+        >
+          <UIcon
+            name="i-lucide-user-plus"
+            class="text-lg"
+          />
+        </button>
+      </UTooltip>
     </div>
 
     <!-- Channel list -->

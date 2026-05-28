@@ -12,9 +12,9 @@ const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
       <UButton
         to="/"
         icon="i-lucide-message-square"
-        color="primary"
+        color="neutral"
         variant="ghost"
-        class="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform hover:scale-105 hover:bg-primary-50 dark:hover:bg-primary-950"
+        class="w-12 h-12 rounded-2xl flex items-center justify-center"
       />
     </UTooltip>
 

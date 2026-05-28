@@ -10,6 +10,7 @@ export interface Server {
   id: string
   name: string
   ownerId: string
+  inviteCode: string
   createdAt: string | Date
 }
 
