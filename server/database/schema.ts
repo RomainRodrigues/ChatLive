@@ -37,3 +37,19 @@ export const messages = pgTable('messages', {
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull()
 })
+
+export const friendships = pgTable('friendships', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  senderId: uuid('sender_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  receiverId: uuid('receiver_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  status: text('status').notNull(), // 'pending' | 'accepted'
+  createdAt: timestamp('created_at').defaultNow().notNull()
+})
+
+export const dmMessages = pgTable('dm_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  senderId: uuid('sender_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  receiverId: uuid('receiver_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+})

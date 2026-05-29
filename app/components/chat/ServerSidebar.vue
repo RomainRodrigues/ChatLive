@@ -10,12 +10,17 @@ const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
       placement="right"
     >
       <UButton
-        to="/"
-        icon="i-lucide-message-square"
-        color="neutral"
-        variant="ghost"
-        class="w-12 h-12 rounded-2xl flex items-center justify-center"
-      />
+        :icon="'i-lucide-message-square'"
+        :color="chatStore.activeServerId === null ? 'primary' : 'neutral'"
+        :variant="chatStore.activeServerId === null ? 'solid' : 'ghost'"
+        class="w-12 h-12 rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-300 relative group"
+        @click="chatStore.selectHome"
+      >
+        <div
+          v-if="chatStore.activeServerId !== null"
+          class="absolute -left-3 w-1 h-0 bg-primary-500 rounded-r-full transition-all duration-300 group-hover:h-5 group-hover:left-0"
+        />
+      </UButton>
     </UTooltip>
 
     <div class="w-8 h-[1px] bg-black/10 dark:bg-white/10 my-2" />

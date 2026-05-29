@@ -15,7 +15,12 @@ export default {
     createChannel: 'Créer un salon',
     logout: 'Se déconnecter',
     online: 'En ligne',
-    settings: 'Paramètres du compte'
+    settings: 'Paramètres du compte',
+    homeTab: 'Accueil',
+    friends: 'Amis',
+    dms: 'Messages Privés',
+    noDms: 'Aucune discussion privée.',
+    defaultUser: 'Utilisateur'
   },
   chat: {
     welcome: 'Bienvenue sur ChatLive',
@@ -23,7 +28,21 @@ export default {
     generalDesc: 'Salon de discussion général',
     placeholder: 'Envoyer un message dans #{name}',
     send: 'Envoyer le message',
-    deleteMessage: 'Supprimer le message'
+    deleteMessage: 'Supprimer le message',
+    statusOnline: 'En ligne',
+    statusOffline: 'Hors ligne',
+    friendDefault: 'Ami',
+    dmWelcomeTitle: 'Début de la conversation privée',
+    dmWelcomeDesc: 'C\'est le tout début de vos messages privés avec {name}.',
+    dmPlaceholder: 'Envoyer un message privé à {name}',
+    lightMode: 'Activer le mode clair',
+    darkMode: 'Activer le mode sombre',
+    emptyTitle: 'C\'est le début !',
+    emptyDesc1: 'Envoyez votre premier message dans le salon',
+    emptyDesc2: 'pour démarrer la conversation.',
+    typingSingle: 'est en train d\'écrire…',
+    typingAnd: 'et',
+    typingMultiple: 'écrivent…'
   },
   modal: {
     createChannelTitle: 'Créer un nouveau salon',
@@ -52,7 +71,8 @@ export default {
     deleteWarning: '⚠️ Attention : Pour confirmer, veuillez saisir le mot {word} ci-dessous.',
     deleteWord: 'SUPPRIMER',
     deletePlaceholder: 'Saisissez {word}',
-    confirmBtn: 'Confirmer l\'effacement'
+    confirmBtn: 'Confirmer l\'effacement',
+    appLanguage: 'Langue de l\'application'
   },
   toasts: {
     profileUpdated: 'Profil mis à jour',
@@ -165,5 +185,36 @@ export default {
     joinBtn: 'Rejoindre le serveur',
     cancelBtn: 'Plus tard',
     joiningProgress: 'Rejoindre...'
+  },
+  friends: {
+    title: 'Amis',
+    tabOnline: 'En ligne',
+    tabAll: 'Tous',
+    tabPending: 'En attente',
+    tabAdd: 'Ajouter un ami',
+    onlineCount: 'En ligne — {count}',
+    noOnline: 'Personne n\'est disponible pour l\'instant.',
+    statusOnline: 'En ligne',
+    chatBtn: 'Discuter',
+    allCount: 'Tous les amis — {count}',
+    noFriends: 'Vous n\'avez pas encore d\'amis. Essayez d\'en ajouter !',
+    pendingCount: 'Demandes en attente — {count}',
+    noPending: 'Aucune demande d\'ami en attente.',
+    requestReceived: 'Demande reçue',
+    requestSent: 'Demande envoyée',
+    acceptBtn: 'Accepter',
+    cancelRequestBtn: 'Annuler',
+    addFriendTitle: 'Ajouter un ami',
+    addFriendDesc: 'Vous pouvez ajouter un ami avec son adresse e-mail ou en recherchant son pseudonyme.',
+    addEmailLabel: 'Ajouter via adresse e-mail',
+    addEmailPlaceholder: 'Saisissez l\'e-mail de votre ami...',
+    sendRequestBtn: 'Envoyer la demande',
+    searchUsersLabel: 'Rechercher des utilisateurs',
+    searchUsersPlaceholder: 'Saisissez un pseudonyme...',
+    addBtn: 'Ajouter',
+    noUserFound: 'Aucun utilisateur trouvé correspondant à "{query}".',
+    closeAlertBtn: 'Fermer',
+    toastRequestSent: 'Demande d\'ami envoyée !',
+    toastError: 'Une erreur est survenue.'
   }
 }

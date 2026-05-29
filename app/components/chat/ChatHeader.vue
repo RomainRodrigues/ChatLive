@@ -45,7 +45,7 @@ function toggleColorMode() {
     <div class="flex items-center gap-2">
       <button
         class="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-        :aria-label="isDark ? (locale === 'fr' ? 'Activer le mode clair' : 'Switch to light mode') : (locale === 'fr' ? 'Activer le mode sombre' : 'Switch to dark mode')"
+        :aria-label="isDark ? $t('chat.lightMode') : $t('chat.darkMode')"
         @click="toggleColorMode"
       >
         <UIcon

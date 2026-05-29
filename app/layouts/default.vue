@@ -3,6 +3,8 @@ const chatStore = useChatStore()
 
 onMounted(() => {
   chatStore.fetchServers()
+  chatStore.fetchFriends()
+  chatStore.fetchDms()
   chatStore.initWebSocket()
 })
 </script>

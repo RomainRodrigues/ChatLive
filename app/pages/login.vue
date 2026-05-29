@@ -67,19 +67,28 @@ definePageMeta({
       </UButton>
 
       <div class="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800 text-center">
-        <p class="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
-          {{ locale === 'fr' ? 'En vous connectant, vous acceptez nos ' : 'By logging in, you accept our ' }}
-          <NuxtLink
-            to="/terms"
-            class="text-primary-500 dark:text-primary-400 hover:underline font-medium"
-          >{{ locale === 'fr' ? "Conditions d'Utilisation" : 'Terms of Use' }}</NuxtLink>
-          {{ locale === 'fr' ? ' et notre ' : ' and our ' }}
-          <NuxtLink
-            to="/privacy"
-            class="text-primary-500 dark:text-primary-400 hover:underline font-medium"
-          >{{ locale === 'fr' ? 'Politique de Confidentialité' : 'Privacy Policy' }}</NuxtLink>
-          {{ locale === 'fr' ? ' relative à la protection de vos données personnelles (RGPD).' : ' regarding the protection of your personal data (GDPR).' }}
-        </p>
+        <i18n-t
+          keypath="auth.consent"
+          tag="p"
+          class="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed"
+        >
+          <template #terms>
+            <NuxtLink
+              to="/terms"
+              class="text-primary-500 dark:text-primary-400 hover:underline font-medium"
+            >
+              {{ $t('auth.terms') }}
+            </NuxtLink>
+          </template>
+          <template #privacy>
+            <NuxtLink
+              to="/privacy"
+              class="text-primary-500 dark:text-primary-400 hover:underline font-medium"
+            >
+              {{ $t('auth.privacy') }}
+            </NuxtLink>
+          </template>
+        </i18n-t>
       </div>
     </UCard>
   </div>

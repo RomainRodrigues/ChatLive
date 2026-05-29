@@ -55,13 +55,17 @@ onMounted(() => {
         />
       </div>
       <h2 class="text-3xl font-bold mb-3 tracking-tight">
-        C'est le début !
+        {{ $t('chat.emptyTitle') }}
       </h2>
-      <p class="text-zinc-500 dark:text-zinc-400 text-lg">
-        Envoyez votre premier message dans le salon
-        <span class="font-semibold text-zinc-800 dark:text-zinc-200">#{{ activeChannel.name }}</span>
-        pour démarrer la conversation.
-      </p>
+      <i18n-t
+        keypath="chat.emptyDesc1"
+        tag="p"
+        class="text-zinc-500 dark:text-zinc-400 text-lg"
+      >
+        <template #name>
+          <span class="font-semibold text-zinc-800 dark:text-zinc-200">#{{ activeChannel.name }}</span>
+        </template>
+      </i18n-t>
     </div>
 
     <!-- Messages Container -->
@@ -72,6 +76,7 @@ onMounted(() => {
       <ChatMessageItem
         v-for="msg in chatStore.messages"
         :key="msg.id"
+        v-memo="[msg.id, msg.content, msg.createdAt]"
         :message="msg"
         @delete="chatStore.deleteMessage"
       />

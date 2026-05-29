@@ -15,7 +15,12 @@ export default {
     createChannel: 'Create a channel',
     logout: 'Log out',
     online: 'Online',
-    settings: 'Account Settings'
+    settings: 'Account Settings',
+    homeTab: 'Home',
+    friends: 'Friends',
+    dms: 'Direct Messages',
+    noDms: 'No direct messages.',
+    defaultUser: 'User'
   },
   chat: {
     welcome: 'Welcome to ChatLive',
@@ -23,7 +28,21 @@ export default {
     generalDesc: 'General chat channel',
     placeholder: 'Send a message in #{name}',
     send: 'Send message',
-    deleteMessage: 'Delete message'
+    deleteMessage: 'Delete message',
+    statusOnline: 'Online',
+    statusOffline: 'Offline',
+    friendDefault: 'Friend',
+    dmWelcomeTitle: 'Start of private conversation',
+    dmWelcomeDesc: 'This is the absolute beginning of your direct messages with {name}.',
+    dmPlaceholder: 'Send a private message to {name}',
+    lightMode: 'Switch to light mode',
+    darkMode: 'Switch to dark mode',
+    emptyTitle: 'It\'s the beginning!',
+    emptyDesc1: 'Send your first message in the channel',
+    emptyDesc2: 'to start the conversation.',
+    typingSingle: 'is typing…',
+    typingAnd: 'and',
+    typingMultiple: 'are typing…'
   },
   modal: {
     createChannelTitle: 'Create a new channel',
@@ -52,7 +71,8 @@ export default {
     deleteWarning: '⚠️ Warning: To confirm, please type the word {word} below.',
     deleteWord: 'DELETE',
     deletePlaceholder: 'Type {word}',
-    confirmBtn: 'Confirm erasure'
+    confirmBtn: 'Confirm erasure',
+    appLanguage: 'Application Language'
   },
   toasts: {
     profileUpdated: 'Profile updated',
@@ -165,5 +185,36 @@ export default {
     joinBtn: 'Join Server',
     cancelBtn: 'Later',
     joiningProgress: 'Joining...'
+  },
+  friends: {
+    title: 'Friends',
+    tabOnline: 'Online',
+    tabAll: 'All',
+    tabPending: 'Pending',
+    tabAdd: 'Add Friend',
+    onlineCount: 'Online — {count}',
+    noOnline: 'No one is available right now.',
+    statusOnline: 'Online',
+    chatBtn: 'Chat',
+    allCount: 'All friends — {count}',
+    noFriends: 'You don\'t have any friends yet. Try adding some!',
+    pendingCount: 'Pending Requests — {count}',
+    noPending: 'No pending friend requests.',
+    requestReceived: 'Request received',
+    requestSent: 'Request sent',
+    acceptBtn: 'Accept',
+    cancelRequestBtn: 'Cancel',
+    addFriendTitle: 'Add Friend',
+    addFriendDesc: 'You can add a friend with their email address or by searching for their username.',
+    addEmailLabel: 'Add via email address',
+    addEmailPlaceholder: 'Enter your friend\'s email...',
+    sendRequestBtn: 'Send Request',
+    searchUsersLabel: 'Search users',
+    searchUsersPlaceholder: 'Enter a username...',
+    addBtn: 'Add',
+    noUserFound: 'No user found matching "{query}".',
+    closeAlertBtn: 'Close',
+    toastRequestSent: 'Friend request sent!',
+    toastError: 'An error occurred.'
   }
 }

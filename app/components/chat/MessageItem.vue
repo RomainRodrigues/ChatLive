@@ -24,18 +24,13 @@ const formattedTime = computed(() => {
 <template>
   <div class="group relative flex items-start gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-2xl transition-all border border-transparent hover:border-black/5 dark:hover:border-white/5">
     <!-- User Avatar -->
-    <img
-      v-if="message.user.avatarUrl"
-      :src="message.user.avatarUrl"
+    <UAvatar
+      :src="message.user.avatarUrl ?? undefined"
       :alt="message.user.name"
-      class="w-10 h-10 rounded-full shrink-0"
-    >
-    <div
-      v-else
-      class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-950/50 text-primary-500 flex items-center justify-center font-bold text-sm shrink-0"
-    >
-      {{ message.user.name.charAt(0).toUpperCase() }}
-    </div>
+      :text="message.user.name.charAt(0).toUpperCase()"
+      size="md"
+      class="shrink-0"
+    />
 
     <!-- Message Content Container -->
     <div class="flex-1 min-w-0">
