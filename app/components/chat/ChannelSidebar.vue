@@ -1,9 +1,7 @@
 <script setup lang="ts">
 const chatStore = useChatStore()
 const { user, clear } = useUserSession()
-const isAddChannelOpen = useState<boolean>('isAddChannelOpen', () => false)
-const isUserSettingsOpen = useState<boolean>('isUserSettingsOpen', () => false)
-const isInviteOpen = useState<boolean>('isInviteOpen', () => false)
+const { createChannel, userSettings, invite } = useModals()
 
 async function handleLogout() {
   await clear()
@@ -28,7 +26,7 @@ const activeServerName = computed(() => {
         <button
           class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 hover:text-primary-500 transition-colors cursor-pointer"
           :aria-label="$t('invite.buttonTooltip')"
-          @click="isInviteOpen = true"
+          @click="invite = true"
         >
           <UIcon
             name="i-lucide-user-plus"
@@ -123,7 +121,7 @@ const activeServerName = computed(() => {
           <button
             class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
             :aria-label="$t('sidebar.createChannel')"
-            @click="isAddChannelOpen = true"
+            @click="createChannel = true"
           >
             <UIcon
               name="i-lucide-plus"
@@ -188,7 +186,7 @@ const activeServerName = computed(() => {
       <button
         class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-500 transition-colors cursor-pointer"
         :aria-label="$t('sidebar.settings')"
-        @click="isUserSettingsOpen = true"
+        @click="userSettings = true"
       >
         <UIcon name="i-lucide-settings" />
       </button>

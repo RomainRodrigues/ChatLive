@@ -1,7 +1,10 @@
 import { db } from '../../utils/drizzle'
-import { messages, users, channels, serverMembers } from '../../database/schema'
-import { eq, desc, and } from 'drizzle-orm'
+import { messages, users } from '../../database/schema'
+import { eq, desc, lt, and } from 'drizzle-orm'
 import { decrypt } from '../../utils/encryption'
+import { requireChannelAccess } from '../../utils/authorization'
+
+const PAGE_SIZE = 50
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -11,29 +14,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'channelId required' })
   }
 
-  // Trouver le salon pour récupérer le serverId
-  const channel = await db.select().from(channels).where(eq(channels.id, String(query.channelId))).limit(1).then(res => res[0])
-  if (!channel) {
-    throw createError({ statusCode: 404, statusMessage: 'Salon introuvable.' })
-  }
+  await requireChannelAccess(session.user.id, String(query.channelId))
 
-  // Vérifier si l'utilisateur est membre du serveur
-  const isMember = await db.select().from(serverMembers)
-    .where(and(
-      eq(serverMembers.serverId, channel.serverId),
-      eq(serverMembers.userId, session.user.id)
-    ))
-    .limit(1)
-    .then(res => res[0])
-
-  if (!isMember) {
-    throw createError({ statusCode: 403, statusMessage: 'Vous n\'avez pas accès à ce serveur.' })
+  // Cursor-based pagination: pass `before` (message id's createdAt ISO string) to load older pages
+  const conditions = [eq(messages.channelId, String(query.channelId))]
+  if (query.before) {
+    conditions.push(lt(messages.createdAt, new Date(String(query.before))))
   }
 
   const result = await db.select({
     id: messages.id,
     content: messages.content,
     createdAt: messages.createdAt,
+    userId: messages.userId,
     user: {
       id: users.id,
       name: users.name,
@@ -42,14 +35,20 @@ export default defineEventHandler(async (event) => {
   })
     .from(messages)
     .leftJoin(users, eq(messages.userId, users.id))
-    .where(eq(messages.channelId, String(query.channelId)))
+    .where(conditions.length === 1 ? conditions[0] : and(...conditions))
     .orderBy(desc(messages.createdAt))
-    .limit(50)
+    .limit(PAGE_SIZE + 1) // fetch one extra to detect if there are more pages
 
-  const decryptedResult = result.map(m => ({
+  const hasMore = result.length > PAGE_SIZE
+  const page = result.slice(0, PAGE_SIZE)
+
+  const decrypted = page.map(m => ({
     ...m,
     content: decrypt(m.content)
   }))
 
-  return decryptedResult.reverse()
+  return {
+    messages: decrypted.reverse(),
+    hasMore
+  }
 })

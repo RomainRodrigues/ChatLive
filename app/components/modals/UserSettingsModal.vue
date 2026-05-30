@@ -1,10 +1,10 @@
 <script setup lang="ts">
-const isUserSettingsOpen = useState<boolean>('isUserSettingsOpen', () => false)
+const { userSettings: isOpen } = useModals()
 const activeTab = ref<'profile' | 'gdpr'>('profile')
 
-// Remettre l'onglet actif à profile à chaque fois que la modale s'ouvre
-watch(isUserSettingsOpen, (isOpen) => {
-  if (isOpen) {
+// Reset to profile tab each time the modal opens
+watch(isOpen, (isModalOpen) => {
+  if (isModalOpen) {
     activeTab.value = 'profile'
   }
 })
@@ -12,13 +12,13 @@ watch(isUserSettingsOpen, (isOpen) => {
 
 <template>
   <UModal
-    v-model:open="isUserSettingsOpen"
+    v-model:open="isOpen"
     :close="true"
     :title="$t('modal.settingsTitle')"
     class="max-w-xl"
   >
     <template #body>
-      <!-- Navigation Onglets -->
+      <!-- Tab Navigation -->
       <div class="flex gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-6">
         <button
           :class="[
@@ -52,11 +52,11 @@ watch(isUserSettingsOpen, (isOpen) => {
         </button>
       </div>
 
-      <!-- Contenu des Onglets -->
+      <!-- Tab Content -->
       <LazyModalsUserSettingsProfileTab v-if="activeTab === 'profile'" />
       <LazyModalsUserSettingsGdprTab
         v-else-if="activeTab === 'gdpr'"
-        @close="isUserSettingsOpen = false"
+        @close="isOpen = false"
       />
     </template>
     <template #footer>
@@ -64,7 +64,7 @@ watch(isUserSettingsOpen, (isOpen) => {
         <UButton
           variant="ghost"
           color="neutral"
-          @click="isUserSettingsOpen = false"
+          @click="isOpen = false"
         >
           {{ $t('modal.close') }}
         </UButton>

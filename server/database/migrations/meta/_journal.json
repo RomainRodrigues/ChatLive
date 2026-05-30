@@ -29,6 +29,13 @@
       "when": 1780084593381,
       "tag": "0003_clean_mikhail_rasputin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780147713515,
+      "tag": "0004_rapid_vindicator",
+      "breakpoints": true
     }
   ]
 }

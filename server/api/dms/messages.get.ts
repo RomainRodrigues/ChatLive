@@ -1,7 +1,9 @@
 import { db } from '../../utils/drizzle'
 import { dmMessages, users } from '../../database/schema'
-import { eq, or, and, desc } from 'drizzle-orm'
+import { eq, or, and, desc, lt } from 'drizzle-orm'
 import { decrypt } from '../../utils/encryption'
+
+const PAGE_SIZE = 50
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -11,6 +13,16 @@ export default defineEventHandler(async (event) => {
 
   if (!partnerId) {
     throw createError({ statusCode: 400, statusMessage: 'partnerId is required.' })
+  }
+
+  const baseCondition = or(
+    and(eq(dmMessages.senderId, currentUserId), eq(dmMessages.receiverId, partnerId)),
+    and(eq(dmMessages.senderId, partnerId), eq(dmMessages.receiverId, currentUserId))
+  )
+
+  const conditions = [baseCondition]
+  if (query.before) {
+    conditions.push(lt(dmMessages.createdAt, new Date(String(query.before))))
   }
 
   // Charger les messages privés échangés entre les deux utilisateurs
@@ -28,16 +40,14 @@ export default defineEventHandler(async (event) => {
   })
     .from(dmMessages)
     .leftJoin(users, eq(dmMessages.senderId, users.id))
-    .where(
-      or(
-        and(eq(dmMessages.senderId, currentUserId), eq(dmMessages.receiverId, partnerId)),
-        and(eq(dmMessages.senderId, partnerId), eq(dmMessages.receiverId, currentUserId))
-      )
-    )
+    .where(and(...conditions))
     .orderBy(desc(dmMessages.createdAt))
-    .limit(50)
+    .limit(PAGE_SIZE + 1)
 
-  const decryptedMessages = rawMessages.map(m => ({
+  const hasMore = rawMessages.length > PAGE_SIZE
+  const page = rawMessages.slice(0, PAGE_SIZE)
+
+  const decryptedMessages = page.map(m => ({
     id: m.id,
     content: decrypt(m.content),
     createdAt: m.createdAt,
@@ -46,5 +56,8 @@ export default defineEventHandler(async (event) => {
     user: m.sender || { id: m.senderId, name: 'Utilisateur', avatarUrl: null }
   }))
 
-  return decryptedMessages.reverse()
+  return {
+    messages: decryptedMessages.reverse(),
+    hasMore
+  }
 })

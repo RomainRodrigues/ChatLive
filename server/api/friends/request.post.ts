@@ -2,23 +2,24 @@ import { db } from '../../utils/drizzle'
 import { friendships, users } from '../../database/schema'
 import { eq, or, and } from 'drizzle-orm'
 import { sendToUser } from '../../utils/wsRegistry'
+import { FriendRequestSchema } from '../../utils/validators'
+import { enforceRateLimit } from '../../utils/rateLimit'
 
-import type { UserProfile } from '~/types/chat'
+import type { UserProfile } from '#shared/types/chat'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const currentUserId = session.user.id
-  const body = await readBody(event)
-
-  const targetUserId = body.userId
-  const email = String(body.email || '').trim().toLowerCase()
+  enforceRateLimit(`friend:${currentUserId}`, { max: 10, windowSeconds: 60 })
+  const body = await readValidatedBody(event, FriendRequestSchema.parse)
 
   let targetUser: UserProfile | null | undefined = null
 
-  if (targetUserId) {
-    targetUser = await db.select().from(users).where(eq(users.id, targetUserId)).limit(1).then(res => res[0])
-  } else if (email) {
-    targetUser = await db.select().from(users).where(eq(users.email, email)).limit(1).then(res => res[0])
+  if (body.userId) {
+    targetUser = await db.select().from(users).where(eq(users.id, body.userId)).limit(1).then(res => res[0])
+  } else if (body.email) {
+    const emailLower = body.email.trim().toLowerCase()
+    targetUser = await db.select().from(users).where(eq(users.email, emailLower)).limit(1).then(res => res[0])
   }
 
   if (!targetUser) {

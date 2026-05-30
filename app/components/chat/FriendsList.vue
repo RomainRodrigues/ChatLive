@@ -130,7 +130,7 @@ const onlineFriends = computed(() => {
                 {{ friend.user.name }}
               </div>
               <div class="text-xs text-zinc-400">
-                {{ friend.user.email }}
+                {{ chatStore.onlineUserIds.has(friend.user.id) ? $t('chat.statusOnline') : $t('chat.statusOffline') }}
               </div>
             </div>
           </div>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
+const { createServer: isOpen } = useModals()
 const newServerName = ref('')
 const isCreating = ref(false)
 const chatStore = useChatStore()
 
-async function createServer() {
+async function handleCreate() {
   if (!newServerName.value.trim()) return
   isCreating.value = true
   try {
@@ -13,10 +13,10 @@ async function createServer() {
       body: { name: newServerName.value.trim() }
     })
     newServerName.value = ''
-    isAddServerOpen.value = false
+    isOpen.value = false
     await chatStore.fetchServers()
   } catch (e) {
-    console.error(e)
+    handleApiError(e, 'Impossible de créer le serveur.')
   } finally {
     isCreating.value = false
   }
@@ -25,7 +25,7 @@ async function createServer() {
 
 <template>
   <UModal
-    v-model:open="isAddServerOpen"
+    v-model:open="isOpen"
     :close="false"
     :title="$t('modal.createServerTitle')"
   >
@@ -40,7 +40,7 @@ async function createServer() {
         autofocus
         maxlength="100"
         class="w-full"
-        @keyup.enter="createServer"
+        @keyup.enter="handleCreate"
       />
     </template>
     <template #footer>
@@ -48,14 +48,14 @@ async function createServer() {
         <UButton
           variant="ghost"
           color="neutral"
-          @click="isAddServerOpen = false"
+          @click="isOpen = false"
         >
           {{ $t('modal.cancel') }}
         </UButton>
         <UButton
           color="primary"
           :loading="isCreating"
-          @click="createServer"
+          @click="handleCreate"
         >
           {{ $t('modal.create') }}
         </UButton>

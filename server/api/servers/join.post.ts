@@ -1,17 +1,20 @@
 import { db } from '../../utils/drizzle'
 import { servers, serverMembers } from '../../database/schema'
 import { eq, and } from 'drizzle-orm'
+import { JoinServerSchema } from '../../utils/validators'
+import { enforceRateLimit } from '../../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const body = await readBody(event)
-
-  if (!body.inviteCode) {
-    throw createError({ statusCode: 400, statusMessage: 'Le code d\'invitation est obligatoire.' })
-  }
+  enforceRateLimit(`join:${session.user.id}`, { max: 5, windowSeconds: 60 })
+  const body = await readValidatedBody(event, JoinServerSchema.parse)
 
   // Trouver le serveur par code d'invitation
-  const server = await db.select().from(servers).where(eq(servers.inviteCode, String(body.inviteCode))).limit(1).then(res => res[0])
+  const server = await db.select().from(servers)
+    .where(eq(servers.inviteCode, body.inviteCode))
+    .limit(1)
+    .then(res => res[0])
+
   if (!server) {
     throw createError({ statusCode: 404, statusMessage: 'Serveur introuvable ou lien d\'invitation invalide.' })
   }
@@ -26,7 +29,6 @@ export default defineEventHandler(async (event) => {
     .then(res => res[0])
 
   if (!existingMember) {
-    // Ajouter l'utilisateur comme membre
     await db.insert(serverMembers).values({
       serverId: server.id,
       userId: session.user.id

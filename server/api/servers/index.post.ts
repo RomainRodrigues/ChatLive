@@ -1,32 +1,28 @@
 import { db } from '../../utils/drizzle'
 import { servers, channels, serverMembers } from '../../database/schema'
+import { CreateServerSchema } from '../../utils/validators'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const body = await readBody(event)
-
-  const name = String(body.name).trim()
-  if (!name) {
-    throw createError({ statusCode: 400, statusMessage: 'Le nom du serveur est obligatoire.' })
-  }
-
-  if (name.length > 100) {
-    throw createError({ statusCode: 400, statusMessage: 'Le nom du serveur ne peut pas dépasser 100 caractères.' })
-  }
+  const body = await readValidatedBody(event, CreateServerSchema.parse)
 
   const [newServer] = await db.insert(servers).values({
-    name,
+    name: body.name,
     ownerId: session.user.id
   }).returning()
 
+  if (!newServer) {
+    throw createError({ statusCode: 500, statusMessage: 'Échec de la création du serveur.' })
+  }
+
   await db.insert(serverMembers).values({
-    serverId: newServer!.id,
+    serverId: newServer.id,
     userId: session.user.id
   })
 
   await db.insert(channels).values({
     name: 'général',
-    serverId: newServer!.id
+    serverId: newServer.id
   })
 
   return newServer

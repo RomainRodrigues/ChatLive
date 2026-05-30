@@ -24,8 +24,29 @@ const typingNames = computed(() =>
   dmRoomId.value ? chatStore.getTypingUsers(dmRoomId.value) : []
 )
 
+let isLoadingOlder = false
+
+const handleScroll = async () => {
+  if (!messagesContainer.value || chatStore.isLoadingMoreDmMessages || !chatStore.hasMoreDmMessages) return
+
+  if (messagesContainer.value.scrollTop === 0) {
+    const oldScrollHeight = messagesContainer.value.scrollHeight
+    isLoadingOlder = true
+    await chatStore.fetchDmMessages(false, true)
+
+    await nextTick()
+    if (messagesContainer.value) {
+      const newScrollHeight = messagesContainer.value.scrollHeight
+      messagesContainer.value.scrollTop = newScrollHeight - oldScrollHeight
+    }
+    isLoadingOlder = false
+  }
+}
+
 watch(() => chatStore.dmMessages.length, () => {
-  scrollToBottom()
+  if (!isLoadingOlder) {
+    scrollToBottom()
+  }
 })
 
 onMounted(() => {
@@ -63,6 +84,14 @@ function formatTime(createdAt: string | Date) {
     <!-- Header -->
     <header class="h-16 flex items-center justify-between px-6 border-b border-black/5 dark:border-white/5 shrink-0 select-none bg-white/35 dark:bg-[#0f0f11]/30 backdrop-blur-md z-10">
       <div class="flex items-center gap-3">
+        <!-- Mobile Sidebar Toggle -->
+        <UButton
+          icon="i-lucide-menu"
+          color="neutral"
+          variant="ghost"
+          class="md:hidden -ml-2 mr-1"
+          @click="chatStore.toggleMobileSidebar"
+        />
         <UUser
           :name="partner.name"
           :description="chatStore.onlineUserIds.has(partner.id) ? $t('chat.statusOnline') : $t('chat.statusOffline')"
@@ -95,6 +124,7 @@ function formatTime(createdAt: string | Date) {
     <div
       ref="messagesContainer"
       class="flex-1 overflow-y-auto p-8 flex flex-col scroll-smooth"
+      @scroll="handleScroll"
     >
       <!-- Loading -->
       <div
@@ -147,6 +177,17 @@ function formatTime(createdAt: string | Date) {
         v-else
         class="flex flex-col gap-4 mt-auto"
       >
+        <!-- Loading Older State -->
+        <div
+          v-if="chatStore.isLoadingMoreDmMessages"
+          class="flex justify-center py-4"
+        >
+          <UIcon
+            name="i-lucide-loader-2"
+            class="animate-spin text-2xl text-primary-500"
+          />
+        </div>
+
         <div
           v-for="msg in chatStore.dmMessages"
           :key="msg.id"

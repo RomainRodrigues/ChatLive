@@ -11,6 +11,8 @@ const emit = defineEmits<{
   (e: 'delete', id: string): void
 }>()
 
+const isConfirmingDelete = ref(false)
+
 const formattedTime = computed(() => {
   try {
     const date = new Date(props.message.createdAt)
@@ -19,6 +21,19 @@ const formattedTime = computed(() => {
     return ''
   }
 })
+
+function requestDelete() {
+  isConfirmingDelete.value = true
+}
+
+function confirmDelete() {
+  emit('delete', props.message.id)
+  isConfirmingDelete.value = false
+}
+
+function cancelDelete() {
+  isConfirmingDelete.value = false
+}
 </script>
 
 <template>
@@ -32,7 +47,7 @@ const formattedTime = computed(() => {
       class="shrink-0"
     />
 
-    <!-- Message Content Container -->
+    <!-- Message Content -->
     <div class="flex-1 min-w-0">
       <div class="flex items-baseline gap-2 mb-1">
         <span class="font-bold text-sm text-zinc-900 dark:text-white truncate">
@@ -47,9 +62,9 @@ const formattedTime = computed(() => {
       </div>
     </div>
 
-    <!-- Floating Actions Panel -->
+    <!-- Floating Actions — Normal State -->
     <div
-      v-if="message.user.id === user?.id"
+      v-if="message.user.id === user?.id && !isConfirmingDelete"
       class="absolute right-4 top-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
     >
       <UButton
@@ -58,8 +73,37 @@ const formattedTime = computed(() => {
         icon="i-lucide-trash-2"
         size="sm"
         :aria-label="$t('chat.deleteMessage')"
-        @click="emit('delete', message.id)"
+        @click="requestDelete"
       />
+    </div>
+
+    <!-- Floating Actions — Confirm Delete State -->
+    <div
+      v-else-if="message.user.id === user?.id && isConfirmingDelete"
+      class="absolute right-4 top-3 flex items-center gap-2 bg-white dark:bg-zinc-900 rounded-xl border border-rose-200 dark:border-rose-800 px-3 py-1.5 shadow-lg"
+    >
+      <span class="text-xs font-medium text-rose-600 dark:text-rose-400 mr-1">
+        {{ $t('chat.confirmDelete') }}
+      </span>
+      <UButton
+        color="error"
+        variant="solid"
+        size="xs"
+        icon="i-lucide-trash-2"
+        :aria-label="$t('chat.deleteConfirm')"
+        @click="confirmDelete"
+      >
+        {{ $t('chat.deleteConfirm') }}
+      </UButton>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        :aria-label="$t('chat.deleteCancel')"
+        @click="cancelDelete"
+      >
+        {{ $t('chat.deleteCancel') }}
+      </UButton>
     </div>
   </div>
 </template>

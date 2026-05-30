@@ -44,8 +44,7 @@ const currentTab = ref<'online' | 'all' | 'pending' | 'add'>('online')
               color="primary"
               variant="solid"
               size="sm"
-              class="ml-1"
-              :ui="{ rounded: 'rounded-full' }"
+              class="ml-1 rounded-full"
             >
               {{ chatStore.friends.pendingIncoming.length }}
             </UBadge>

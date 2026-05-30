@@ -15,8 +15,10 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  routeRules: {
-    '/': { prerender: true }
+  runtimeConfig: {
+    public: {
+      isDev: process.env.NODE_ENV !== 'production'
+    }
   },
 
   compatibilityDate: '2025-01-15',

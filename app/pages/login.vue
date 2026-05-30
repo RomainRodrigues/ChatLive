@@ -1,7 +1,14 @@
 <script setup lang="ts">
 const { locale, setLocale } = useI18n()
+const { public: { isDev } } = useRuntimeConfig()
+
 definePageMeta({
   layout: false
+})
+
+useSeoMeta({
+  title: 'Connexion — ChatLive',
+  description: 'Connectez-vous à ChatLive pour discuter en temps réel avec vos amis.'
 })
 </script>
 
@@ -55,6 +62,7 @@ definePageMeta({
       </UButton>
 
       <UButton
+        v-if="isDev"
         to="/auth/dev"
         icon="i-lucide-bug"
         color="primary"

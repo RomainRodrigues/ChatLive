@@ -7,8 +7,29 @@ const activeChannel = computed(() =>
   chatStore.channels.find(c => c.id === chatStore.activeChannelId)
 )
 
+let isLoadingOlder = false
+
+const handleScroll = async () => {
+  if (!messagesContainer.value || chatStore.isLoadingMoreMessages || !chatStore.hasMoreMessages) return
+
+  if (messagesContainer.value.scrollTop === 0) {
+    const oldScrollHeight = messagesContainer.value.scrollHeight
+    isLoadingOlder = true
+    await chatStore.fetchMessages(false, true)
+
+    await nextTick()
+    if (messagesContainer.value) {
+      const newScrollHeight = messagesContainer.value.scrollHeight
+      messagesContainer.value.scrollTop = newScrollHeight - oldScrollHeight
+    }
+    isLoadingOlder = false
+  }
+}
+
 watch(() => chatStore.messages.length, () => {
-  scrollToBottom()
+  if (!isLoadingOlder) {
+    scrollToBottom()
+  }
 })
 
 onMounted(() => {
@@ -20,6 +41,7 @@ onMounted(() => {
   <div
     ref="messagesContainer"
     class="flex-1 overflow-y-auto p-8 flex flex-col scroll-smooth"
+    @scroll="handleScroll"
   >
     <!-- Loading State for Messages -->
     <div
@@ -73,6 +95,17 @@ onMounted(() => {
       v-else
       class="flex flex-col gap-4 mt-auto"
     >
+      <!-- Loading Older State -->
+      <div
+        v-if="chatStore.isLoadingMoreMessages"
+        class="flex justify-center py-4"
+      >
+        <UIcon
+          name="i-lucide-loader-2"
+          class="animate-spin text-2xl text-primary-500"
+        />
+      </div>
+
       <ChatMessageItem
         v-for="msg in chatStore.messages"
         :key="msg.id"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const chatStore = useChatStore()
-const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
+const { createServer } = useModals()
 </script>
 
 <template>
@@ -64,7 +64,7 @@ const isAddServerOpen = useState<boolean>('isAddServerOpen', () => false)
     >
       <button
         class="w-12 h-12 rounded-2xl flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-primary-500 hover:border-primary-500 transition-colors cursor-pointer"
-        @click="isAddServerOpen = true"
+        @click="createServer = true"
       >
         <UIcon
           name="i-lucide-plus"

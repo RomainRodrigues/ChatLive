@@ -1,20 +1,25 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import type { Server, Channel, Message, FriendRelation, DmConversation, DmMessage } from '~/types/chat'
 
+// ─── WebSocket Reconnection Config ───────────────────
+const WS_MIN_DELAY = 1_000 // 1s
+const WS_MAX_DELAY = 30_000 // 30s
+const WS_HEARTBEAT_INTERVAL = 30_000 // 30s
+
 export const useChatStore = defineStore('chat', () => {
-  // State
+  // ─── Servers & Channels ───────────────────────────
   const servers = ref<Server[]>([])
   const channels = ref<Channel[]>([])
   const messages = ref<Message[]>([])
   const activeServerId = ref<string | null>(null)
   const activeChannelId = ref<string | null>(null)
-  const ws = ref<WebSocket | null>(null)
   const isLoadingServers = ref(true)
   const isLoadingChannels = ref(false)
   const isLoadingMessages = ref(false)
+  const isLoadingMoreMessages = ref(false)
+  const hasMoreMessages = ref(false)
+  const isMobileSidebarOpen = ref(false)
 
-  // Amis & DMs State
+  // ─── Friends & DMs ───────────────────────────────
   const activeDmUserId = ref<string | null>(null)
   const activeHomeTab = ref<'friends' | 'chat'>('friends')
   const friends = ref<{ friends: FriendRelation[], pendingIncoming: FriendRelation[], pendingOutgoing: FriendRelation[] }>({
@@ -27,25 +32,46 @@ export const useChatStore = defineStore('chat', () => {
   const isLoadingFriends = ref(false)
   const isLoadingDms = ref(false)
   const isLoadingDmMessages = ref(false)
+  const isLoadingMoreDmMessages = ref(false)
+  const hasMoreDmMessages = ref(false)
 
-  // Presence State
+  // ─── Presence ────────────────────────────────────
   const onlineUserIds = ref<Set<string>>(new Set())
 
-  // Typing Indicator State: channelId -> array of { userId, userName, timeoutId }
+  // ─── Typing Indicators ───────────────────────────
   interface TypingUser { userId: string, userName: string, timeoutId: ReturnType<typeof setTimeout> }
   const typingUsers = ref<Map<string, TypingUser[]>>(new Map())
+  const typingDebounceMap = new Map<string, ReturnType<typeof setTimeout>>()
 
-  // Actions
+  // ─── WebSocket State ─────────────────────────────
+  const ws = ref<WebSocket | null>(null)
+  let reconnectDelay = WS_MIN_DELAY
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  let isIntentionallyClosed = false
+
+  // ─── DMs debounce (avoid re-fetching on every WS message) ───
+  let dmFetchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+  function debouncedFetchDms() {
+    if (dmFetchDebounceTimer) clearTimeout(dmFetchDebounceTimer)
+    dmFetchDebounceTimer = setTimeout(() => fetchDms(), 1500)
+  }
+
+  // ─── Server & Channel Actions ─────────────────────
+
   async function fetchServers() {
     isLoadingServers.value = true
     try {
       servers.value = await $fetch<Server[]>('/api/servers')
       if (servers.value.length > 0 && !activeServerId.value) {
-        activeServerId.value = servers.value[0]!.id
-        await fetchChannels()
+        const firstId = servers.value[0]?.id
+        if (firstId) {
+          activeServerId.value = firstId
+          await fetchChannels()
+        }
       }
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible de charger les serveurs.')
     } finally {
       isLoadingServers.value = false
     }
@@ -56,46 +82,91 @@ export const useChatStore = defineStore('chat', () => {
     isLoadingChannels.value = true
     try {
       channels.value = await $fetch<Channel[]>(`/api/channels?serverId=${activeServerId.value}`)
-      if (channels.value.length > 0 && (!activeChannelId.value || !channels.value.find(c => c.id === activeChannelId.value))) {
-        activeChannelId.value = channels.value[0]!.id
-        await fetchMessages(true)
-        subscribeToChannel(activeChannelId.value)
+      const channelExists = activeChannelId.value && channels.value.find(c => c.id === activeChannelId.value)
+      if (channels.value.length > 0 && !channelExists) {
+        const firstId = channels.value[0]?.id
+        if (firstId) {
+          activeChannelId.value = firstId
+          await fetchMessages(true)
+          subscribeToChannel(firstId)
+        }
       } else if (channels.value.length === 0) {
         activeChannelId.value = null
         subscribeToChannel(null)
       }
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible de charger les salons.')
     } finally {
       isLoadingChannels.value = false
     }
   }
 
-  async function fetchMessages(initial = false) {
+  async function fetchMessages(initial = false, loadMore = false) {
     if (!activeChannelId.value) return
     if (initial) {
       isLoadingMessages.value = true
+      hasMoreMessages.value = false
     }
+    if (loadMore) isLoadingMoreMessages.value = true
+
     try {
-      messages.value = await $fetch<Message[]>(`/api/messages?channelId=${activeChannelId.value}`)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      if (initial) {
-        isLoadingMessages.value = false
+      const beforeParam = loadMore && messages.value.length > 0
+        ? `&before=${new Date(messages.value[0]!.createdAt).toISOString()}`
+        : ''
+      const res = await $fetch<{ messages: Message[], hasMore: boolean }>(`/api/messages?channelId=${activeChannelId.value}${beforeParam}`)
+
+      if (loadMore) {
+        messages.value = [...res.messages, ...messages.value]
+      } else {
+        messages.value = res.messages
       }
+      hasMoreMessages.value = res.hasMore
+    } catch (e) {
+      handleApiError(e, 'Impossible de charger les messages.')
+    } finally {
+      if (initial) isLoadingMessages.value = false
+      if (loadMore) isLoadingMoreMessages.value = false
     }
   }
 
   async function sendMessage(content: string) {
     if (!activeChannelId.value || !content.trim()) return
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`
+    const currentUser = useUserSession().user.value
+    if (currentUser) {
+      const tempMessage: Message = {
+        id: tempId,
+        content,
+        createdAt: new Date().toISOString(),
+        userId: currentUser.id,
+        channelId: activeChannelId.value,
+        user: {
+          id: currentUser.id,
+          name: currentUser.name || 'Moi',
+          avatarUrl: currentUser.avatarUrl || null
+        }
+      }
+      messages.value.push(tempMessage)
+    }
+
     try {
-      await $fetch('/api/messages', {
+      const msg = await $fetch<Message>('/api/messages', {
         method: 'POST',
         body: { channelId: activeChannelId.value, content }
       })
+      // Replace temporary message with actual message from server
+      const index = messages.value.findIndex(m => m.id === tempId)
+      if (index !== -1) {
+        messages.value[index] = msg
+      } else if (!messages.value.some(m => m.id === msg.id)) {
+        messages.value.push(msg)
+      }
     } catch (e) {
-      console.error(e)
+      // Remove temporary message on failure
+      messages.value = messages.value.filter(m => m.id !== tempId)
+      handleApiError(e, 'Impossible d\'envoyer le message.')
     }
   }
 
@@ -106,7 +177,7 @@ export const useChatStore = defineStore('chat', () => {
         body: { messageId }
       })
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible de supprimer le message.')
     }
   }
 
@@ -120,126 +191,173 @@ export const useChatStore = defineStore('chat', () => {
   async function selectChannel(channelId: string) {
     activeChannelId.value = channelId
     messages.value = []
+    isMobileSidebarOpen.value = false // Close sidebar on mobile
     await fetchMessages(true)
     subscribeToChannel(channelId)
   }
 
+  function toggleMobileSidebar() {
+    isMobileSidebarOpen.value = !isMobileSidebarOpen.value
+  }
+
+  // ─── WebSocket ───────────────────────────────────
+
   function initWebSocket() {
     if (ws.value) return
+    isIntentionallyClosed = false
+    _connect()
+  }
+
+  function _connect() {
+    if (isIntentionallyClosed) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    const wsUrl = `${protocol}//${host}/_ws`
-
-    console.log('[WS] Connecting to:', wsUrl)
-    const socket = new WebSocket(wsUrl)
+    const socket = new WebSocket(`${protocol}//${host}/_ws`)
 
     socket.onopen = async () => {
-      console.log('[WS] Connected to server')
-      if (activeChannelId.value) {
-        subscribeToChannel(activeChannelId.value)
-      }
-      // Hydrate presence state
+      reconnectDelay = WS_MIN_DELAY // Reset backoff on successful connection
+      if (activeChannelId.value) subscribeToChannel(activeChannelId.value)
+      // Hydrate presence
       try {
         const res = await $fetch<{ onlineUserIds: string[] }>('/api/users/online')
         onlineUserIds.value = new Set(res.onlineUserIds)
-      } catch (e) {
-        console.error('[WS] Failed to fetch online users:', e)
-      }
+      } catch { /* non-critical */ }
+      // Start heartbeat
+      _startHeartbeat()
     }
 
     socket.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'message:new' && data.message) {
-          if (data.message.channelId === activeChannelId.value) {
-            if (!messages.value.some(m => m.id === data.message.id)) {
-              messages.value.push(data.message)
-            }
-          }
-        } else if (data.type === 'message:delete' && data.messageId) {
-          messages.value = messages.value.filter(m => m.id !== data.messageId)
-        } else if (data.type === 'dm:message:new' && data.message) {
-          const currentUserId = useUserSession().user.value?.id
-          if (currentUserId) {
-            const expectedDmRoomId = [currentUserId, activeDmUserId.value].sort().join('_')
-            if (data.dmRoomId === expectedDmRoomId) {
-              if (!dmMessages.value.some(m => m.id === data.message.id)) {
-                dmMessages.value.push(data.message)
-              }
-            }
-          }
-          fetchDms() // Rafraîchir la liste de DMs pour remonter la convo en haut
-        } else if (data.type === 'friends:update') {
-          fetchFriends()
-        } else if (data.type === 'dms:update') {
-          fetchDms()
-
-        // --- Presence ---
-        } else if (data.type === 'presence' && data.userId) {
-          if (data.status === 'online') {
-            onlineUserIds.value = new Set([...onlineUserIds.value, data.userId])
-          } else {
-            const next = new Set(onlineUserIds.value)
-            next.delete(data.userId)
-            onlineUserIds.value = next
-          }
-
-        // --- Typing Indicator ---
-        } else if (data.type === 'typing' && data.userId && data.userName && data.channelId) {
-          handleTypingStart(data.channelId, data.userId, data.userName)
-        } else if (data.type === 'typing:stop' && data.userId && data.channelId) {
-          handleTypingStop(data.channelId, data.userId)
-        }
+        _handleMessage(JSON.parse(event.data))
       } catch (e) {
-        console.error('[WS] Error processing message:', e)
+        console.error('[WS] Failed to parse message:', e)
       }
     }
 
-    socket.onclose = () => {
-      console.log('[WS] Disconnected from server. Reconnecting in 3s...')
+    socket.onclose = (_ev) => {
+      _stopHeartbeat()
       ws.value = null
-      setTimeout(() => initWebSocket(), 3000)
+      if (!isIntentionallyClosed) {
+        const delay = reconnectDelay
+        reconnectDelay = Math.min(reconnectDelay * 2, WS_MAX_DELAY) // Exponential backoff
+        reconnectTimer = setTimeout(() => _connect(), delay)
+      }
     }
 
-    socket.onerror = (err) => {
-      console.error('[WS] Error:', err)
+    socket.onerror = () => {
+      // onerror is always followed by onclose, reconnect is handled there
     }
 
     ws.value = socket
   }
 
+  function destroyWebSocket() {
+    isIntentionallyClosed = true
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    _stopHeartbeat()
+    ws.value?.close()
+    ws.value = null
+  }
+
+  function _startHeartbeat() {
+    _stopHeartbeat()
+    heartbeatTimer = setInterval(() => {
+      if (ws.value?.readyState === WebSocket.OPEN) {
+        ws.value.send(JSON.stringify({ type: 'ping' }))
+      }
+    }, WS_HEARTBEAT_INTERVAL)
+  }
+
+  function _stopHeartbeat() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+    }
+  }
+
+  function _handleMessage(data: Record<string, unknown>) {
+    switch (data.type) {
+      case 'message:new': {
+        const msg = data.message as Message
+        if (msg?.channelId === activeChannelId.value) {
+          if (!messages.value.some(m => m.id === msg.id)) {
+            messages.value.push(msg)
+          }
+        }
+        break
+      }
+      case 'message:delete': {
+        messages.value = messages.value.filter(m => m.id !== data.messageId)
+        break
+      }
+      case 'dm:message:new': {
+        const msg = data.message as DmMessage
+        const currentUserId = useUserSession().user.value?.id
+        if (currentUserId) {
+          const expectedRoomId = [currentUserId, activeDmUserId.value].sort().join('_')
+          if (data.dmRoomId === expectedRoomId && !dmMessages.value.some(m => m.id === msg.id)) {
+            dmMessages.value.push(msg)
+          }
+        }
+        debouncedFetchDms()
+        break
+      }
+      case 'friends:update':
+        fetchFriends()
+        break
+      case 'dms:update':
+        debouncedFetchDms()
+        break
+      case 'presence': {
+        const userId = data.userId as string
+        if (data.status === 'online') {
+          onlineUserIds.value = new Set([...onlineUserIds.value, userId])
+        } else {
+          const next = new Set(onlineUserIds.value)
+          next.delete(userId)
+          onlineUserIds.value = next
+        }
+        break
+      }
+      case 'typing':
+        if (data.userId && data.userName && data.channelId) {
+          _handleTypingStart(data.channelId as string, data.userId as string, data.userName as string)
+        }
+        break
+      case 'typing:stop':
+        if (data.userId && data.channelId) {
+          _handleTypingStop(data.channelId as string, data.userId as string)
+        }
+        break
+    }
+  }
+
   function subscribeToChannel(channelId: string | null) {
-    if (ws.value && ws.value.readyState === WebSocket.OPEN) {
+    if (ws.value?.readyState === WebSocket.OPEN) {
       ws.value.send(JSON.stringify({ type: 'subscribe', channelId }))
     }
   }
 
-  // --- Typing Indicator Helpers ---
+  // ─── Typing Indicators ───────────────────────────
 
-  function handleTypingStart(channelId: string, userId: string, userName: string) {
+  function _handleTypingStart(channelId: string, userId: string, userName: string) {
     const current = typingUsers.value.get(channelId) ?? []
-    // Clear existing timeout for this user
     const existing = current.find(u => u.userId === userId)
     if (existing) clearTimeout(existing.timeoutId)
-    // Set a 4-second auto-cleanup in case typing:stop is never received
-    const timeoutId = setTimeout(() => handleTypingStop(channelId, userId), 4000)
-    const updated = current.filter(u => u.userId !== userId)
-    updated.push({ userId, userName, timeoutId })
+    const timeoutId = setTimeout(() => _handleTypingStop(channelId, userId), 4000)
+    const updated = [...current.filter(u => u.userId !== userId), { userId, userName, timeoutId }]
     typingUsers.value = new Map(typingUsers.value).set(channelId, updated)
   }
 
-  function handleTypingStop(channelId: string, userId: string) {
+  function _handleTypingStop(channelId: string, userId: string) {
     const current = typingUsers.value.get(channelId) ?? []
     const existing = current.find(u => u.userId === userId)
     if (existing) clearTimeout(existing.timeoutId)
     const updated = current.filter(u => u.userId !== userId)
     const next = new Map(typingUsers.value)
-    if (updated.length === 0) {
-      next.delete(channelId)
-    } else {
-      next.set(channelId, updated)
-    }
+    if (updated.length === 0) next.delete(channelId)
+    else next.set(channelId, updated)
     typingUsers.value = next
   }
 
@@ -247,21 +365,13 @@ export const useChatStore = defineStore('chat', () => {
     return (typingUsers.value.get(channelId) ?? []).map(u => u.userName)
   }
 
-  // Debounce map: channelId -> timeout handle
-  const typingDebounceMap = new Map<string, ReturnType<typeof setTimeout>>()
-
   function sendTyping(channelId: string) {
     if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return
-    // Send typing:start only if not already in debounce window
     if (!typingDebounceMap.has(channelId)) {
       ws.value.send(JSON.stringify({ type: 'typing:start', channelId }))
     }
-    // Reset debounce timer
     clearTimeout(typingDebounceMap.get(channelId))
-    const timer = setTimeout(() => {
-      stopTyping(channelId)
-    }, 3000)
-    typingDebounceMap.set(channelId, timer)
+    typingDebounceMap.set(channelId, setTimeout(() => stopTyping(channelId), 3000))
   }
 
   function stopTyping(channelId: string) {
@@ -271,13 +381,14 @@ export const useChatStore = defineStore('chat', () => {
     ws.value.send(JSON.stringify({ type: 'typing:stop', channelId }))
   }
 
-  // Friends & DMs Actions
+  // ─── Friends & DMs ───────────────────────────────
+
   async function fetchFriends() {
     isLoadingFriends.value = true
     try {
       friends.value = await $fetch<{ friends: FriendRelation[], pendingIncoming: FriendRelation[], pendingOutgoing: FriendRelation[] }>('/api/friends')
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible de charger les amis.')
     } finally {
       isLoadingFriends.value = false
     }
@@ -288,100 +399,121 @@ export const useChatStore = defineStore('chat', () => {
     try {
       dmConversations.value = await $fetch<DmConversation[]>('/api/dms')
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible de charger les conversations.')
     } finally {
       isLoadingDms.value = false
     }
   }
 
-  async function fetchDmMessages(initial = false) {
+  async function fetchDmMessages(initial = false, loadMore = false) {
     if (!activeDmUserId.value) return
     if (initial) {
       isLoadingDmMessages.value = true
+      hasMoreDmMessages.value = false
     }
+    if (loadMore) isLoadingMoreDmMessages.value = true
+
     try {
-      dmMessages.value = await $fetch<DmMessage[]>(`/api/dms/messages?partnerId=${activeDmUserId.value}`)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      if (initial) {
-        isLoadingDmMessages.value = false
+      const beforeParam = loadMore && dmMessages.value.length > 0
+        ? `&before=${new Date(dmMessages.value[0]!.createdAt).toISOString()}`
+        : ''
+      const res = await $fetch<{ messages: DmMessage[], hasMore: boolean }>(`/api/dms/messages?partnerId=${activeDmUserId.value}${beforeParam}`)
+
+      if (loadMore) {
+        dmMessages.value = [...res.messages, ...dmMessages.value]
+      } else {
+        dmMessages.value = res.messages
       }
+      hasMoreDmMessages.value = res.hasMore
+    } catch (e) {
+      handleApiError(e, 'Impossible de charger les messages privés.')
+    } finally {
+      if (initial) isLoadingDmMessages.value = false
+      if (loadMore) isLoadingMoreDmMessages.value = false
     }
   }
 
   async function sendDmMessage(content: string) {
     if (!activeDmUserId.value || !content.trim()) return
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`
+    const currentUser = useUserSession().user.value
+    if (currentUser) {
+      const tempMessage: DmMessage = {
+        id: tempId,
+        content,
+        createdAt: new Date().toISOString(),
+        senderId: currentUser.id,
+        receiverId: activeDmUserId.value,
+        user: {
+          id: currentUser.id,
+          name: currentUser.name || 'Moi',
+          avatarUrl: currentUser.avatarUrl || null
+        }
+      }
+      dmMessages.value.push(tempMessage)
+    }
+
     try {
       const msg = await $fetch<DmMessage>('/api/dms/messages', {
         method: 'POST',
         body: { receiverId: activeDmUserId.value, content }
       })
-      if (!dmMessages.value.some(m => m.id === msg.id)) {
+
+      // Replace temporary message with actual message from server
+      const index = dmMessages.value.findIndex(m => m.id === tempId)
+      if (index !== -1) {
+        dmMessages.value[index] = msg
+      } else if (!dmMessages.value.some(m => m.id === msg.id)) {
         dmMessages.value.push(msg)
       }
-      fetchDms() // Rafraîchir pour remonter la convo
+      debouncedFetchDms()
     } catch (e) {
-      console.error(e)
+      // Remove temporary message on failure
+      dmMessages.value = dmMessages.value.filter(m => m.id !== tempId)
+      handleApiError(e, 'Impossible d\'envoyer le message privé.')
     }
   }
 
   async function sendFriendRequest(emailOrUserId: string, isEmail = false) {
-    const body: Record<string, string> = {}
-    if (isEmail) {
-      body.email = emailOrUserId
-    } else {
-      body.userId = emailOrUserId
-    }
-    const res = await $fetch<{ message: string }>('/api/friends/request', {
-      method: 'POST',
-      body
-    })
+    const body: Record<string, string> = isEmail ? { email: emailOrUserId } : { userId: emailOrUserId }
+    const res = await $fetch<{ message: string }>('/api/friends/request', { method: 'POST', body })
     await fetchFriends()
     return res
   }
 
   async function acceptFriendRequest(friendshipId: string) {
     try {
-      await $fetch('/api/friends/accept', {
-        method: 'POST',
-        body: { friendshipId }
-      })
-      await fetchFriends()
-      await fetchDms()
+      await $fetch('/api/friends/accept', { method: 'POST', body: { friendshipId } })
+      await Promise.all([fetchFriends(), fetchDms()])
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible d\'accepter la demande d\'ami.')
     }
   }
 
   async function declineFriendRequest(friendshipId: string) {
     try {
-      await $fetch('/api/friends/decline', {
-        method: 'POST',
-        body: { friendshipId }
-      })
-      await fetchFriends()
-      await fetchDms()
+      await $fetch('/api/friends/decline', { method: 'POST', body: { friendshipId } })
+      await Promise.all([fetchFriends(), fetchDms()])
     } catch (e) {
-      console.error(e)
+      handleApiError(e, 'Impossible de refuser la demande d\'ami.')
     }
   }
 
-  async function selectDmPartner(partnerId: string) {
+  function selectDmPartner(partnerId: string) {
     activeServerId.value = null
     activeChannelId.value = null
     activeDmUserId.value = partnerId
     activeHomeTab.value = 'chat'
     dmMessages.value = []
-
-    await fetchDmMessages(true)
-
-    // S'abonner via WebSocket
-    const currentUserId = useUserSession().user.value?.id
-    if (currentUserId) {
-      const dmRoomId = [currentUserId, partnerId].sort().join('_')
-      subscribeToChannel(`dm:${dmRoomId}`)
-    }
+    isMobileSidebarOpen.value = false // Close sidebar on mobile
+    fetchDmMessages(true).then(() => {
+      const currentUserId = useUserSession().user.value?.id
+      if (currentUserId) {
+        subscribeToChannel(`dm:${[currentUserId, partnerId].sort().join('_')}`)
+      }
+    })
   }
 
   function selectHome() {
@@ -393,48 +525,21 @@ export const useChatStore = defineStore('chat', () => {
     fetchDms()
   }
 
+  // ─── Public API ──────────────────────────────────
   return {
-    servers,
-    channels,
-    messages,
-    activeServerId,
-    activeChannelId,
-    ws,
-    isLoadingServers,
-    isLoadingChannels,
-    isLoadingMessages,
-    activeDmUserId,
-    activeHomeTab,
-    friends,
-    dmConversations,
-    dmMessages,
-    isLoadingFriends,
-    isLoadingDms,
-    isLoadingDmMessages,
-    // Presence
-    onlineUserIds,
-    // Typing
-    typingUsers,
-    getTypingUsers,
-    sendTyping,
-    stopTyping,
-    fetchServers,
-    fetchChannels,
-    fetchMessages,
-    sendMessage,
-    deleteMessage,
-    selectServer,
-    selectChannel,
-    initWebSocket,
-    subscribeToChannel,
-    fetchFriends,
-    fetchDms,
-    fetchDmMessages,
-    sendDmMessage,
-    sendFriendRequest,
-    acceptFriendRequest,
-    declineFriendRequest,
-    selectDmPartner,
-    selectHome
+    // State
+    servers, channels, messages, activeServerId, activeChannelId, ws,
+    isLoadingServers, isLoadingChannels, isLoadingMessages, isLoadingMoreMessages, hasMoreMessages, isMobileSidebarOpen,
+    activeDmUserId, activeHomeTab, friends, dmConversations, dmMessages,
+    isLoadingFriends, isLoadingDms, isLoadingDmMessages, isLoadingMoreDmMessages, hasMoreDmMessages,
+    onlineUserIds, typingUsers,
+    // Actions
+    fetchServers, fetchChannels, fetchMessages, sendMessage, deleteMessage,
+    selectServer, selectChannel, toggleMobileSidebar,
+    initWebSocket, destroyWebSocket, subscribeToChannel,
+    getTypingUsers, sendTyping, stopTyping,
+    fetchFriends, fetchDms, fetchDmMessages, sendDmMessage,
+    sendFriendRequest, acceptFriendRequest, declineFriendRequest,
+    selectDmPartner, selectHome
   }
 })

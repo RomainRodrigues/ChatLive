@@ -1,75 +1,58 @@
 import { db } from '../../utils/drizzle'
 import { dmMessages, users } from '../../database/schema'
-import { eq, or } from 'drizzle-orm'
+import { eq, or, sql } from 'drizzle-orm'
 import { decrypt } from '../../utils/encryption'
-import type { UserProfile } from '~/types/chat'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const currentUserId = session.user.id
 
-  // 1. Récupérer tous les DMs impliquant l'utilisateur
-  const allDms = await db.select({
-    senderId: dmMessages.senderId,
-    receiverId: dmMessages.receiverId,
-    content: dmMessages.content,
-    createdAt: dmMessages.createdAt
-  })
-    .from(dmMessages)
-    .where(
-      or(
-        eq(dmMessages.senderId, currentUserId),
-        eq(dmMessages.receiverId, currentUserId)
-      )
-    )
+  // Use a subquery to get only the latest message per conversation partner.
+  // This avoids loading ALL DMs into memory.
+  const latestPerPartner = await db.execute(sql`
+    SELECT DISTINCT ON (partner_id)
+      CASE
+        WHEN ${dmMessages.senderId} = ${currentUserId} THEN ${dmMessages.receiverId}
+        ELSE ${dmMessages.senderId}
+      END AS partner_id,
+      ${dmMessages.content} AS content,
+      ${dmMessages.createdAt} AS created_at
+    FROM ${dmMessages}
+    WHERE ${dmMessages.senderId} = ${currentUserId}
+       OR ${dmMessages.receiverId} = ${currentUserId}
+    ORDER BY partner_id, ${dmMessages.createdAt} DESC
+  `)
 
-  if (allDms.length === 0) {
+  if (!latestPerPartner || latestPerPartner.length === 0) {
     return []
   }
 
-  // 2. Regrouper par partenaire de conversation et trouver le message le plus récent
-  interface ConversationInfo {
-    partnerId: string
-    latestMessage: string
-    latestMessageAt: Date
-  }
-
-  const conversationsMap = new Map<string, ConversationInfo>()
-
-  for (const dm of allDms) {
-    const partnerId = dm.senderId === currentUserId ? dm.receiverId : dm.senderId
-    const decrypted = decrypt(dm.content)
-
-    const existing = conversationsMap.get(partnerId)
-    if (!existing || dm.createdAt > existing.latestMessageAt) {
-      conversationsMap.set(partnerId, {
-        partnerId,
-        latestMessage: decrypted.length > 60 ? decrypted.substring(0, 57) + '...' : decrypted,
-        latestMessageAt: dm.createdAt
-      })
+  // Extract partner IDs and decrypt the latest messages
+  const partnersInfo = latestPerPartner.map((row: Record<string, unknown>) => {
+    const content = decrypt(String(row.content || ''))
+    return {
+      partnerId: String(row.partner_id),
+      latestMessage: content.length > 60 ? content.substring(0, 57) + '...' : content,
+      latestMessageAt: new Date(row.created_at as string)
     }
-  }
+  })
 
-  const partnersInfo = Array.from(conversationsMap.values())
-
-  // 3. Charger les profils des partenaires
+  // Load partner profiles
   const partnerIds = partnersInfo.map(p => p.partnerId)
-  let partnersProfiles: UserProfile[] = []
-
-  if (partnerIds.length > 0) {
-    partnersProfiles = await db.select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      avatarUrl: users.avatarUrl
-    })
-      .from(users)
-      .where(or(...partnerIds.map(id => eq(users.id, id))))
-  }
+  const partnersProfiles = partnerIds.length > 0
+    ? await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatarUrl: users.avatarUrl
+      })
+        .from(users)
+        .where(or(...partnerIds.map(id => eq(users.id, id))))
+    : []
 
   const profileMap = new Map(partnersProfiles.map(u => [u.id, u]))
 
-  // 4. Construire le payload final trié du plus récent au plus ancien
+  // Build final sorted payload
   const result = partnersInfo
     .map((p) => {
       const profile = profileMap.get(p.partnerId)

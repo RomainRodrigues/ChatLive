@@ -95,4 +95,3 @@ export function sendToUser(userId: string, message: unknown) {
     }
   }
 }
-

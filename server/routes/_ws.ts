@@ -1,6 +1,6 @@
 import { registerPeer, unregisterPeer, registerUserPeer, unregisterUserPeer, addOnlineUser, removeOnlineUser, sendToUser, broadcastToChannel } from '../utils/wsRegistry'
 import { db } from '../utils/drizzle'
-import { channels, serverMembers, friendships, users } from '../database/schema'
+import { channels, serverMembers, friendships } from '../database/schema'
 import { eq, and, or } from 'drizzle-orm'
 
 interface AuthenticatedPeerContext {
@@ -95,8 +95,8 @@ export default defineWebSocketHandler({
             .from(channels)
             .innerJoin(serverMembers, eq(channels.serverId, serverMembers.serverId))
             .where(and(
-               eq(channels.id, String(data.channelId)),
-               eq(serverMembers.userId, userId)
+              eq(channels.id, String(data.channelId)),
+              eq(serverMembers.userId, userId)
             ))
             .limit(1)
             .then(res => res[0])
@@ -112,25 +112,20 @@ export default defineWebSocketHandler({
           unregisterPeer(peer)
           console.log(`[WS] Peer ${peer.id} unsubscribed from all channels`)
         }
-      }
-
-      // --- Typing Indicator ---
-      else if (data.type === 'typing:start' && data.channelId && userId && userName) {
+      } else if (data.type === 'typing:start' && data.channelId && userId && userName) {
         broadcastToChannel(String(data.channelId), {
           type: 'typing',
           userId,
           userName,
           channelId: String(data.channelId)
         }, peer)
-      }
-      else if (data.type === 'typing:stop' && data.channelId && userId) {
+      } else if (data.type === 'typing:stop' && data.channelId && userId) {
         broadcastToChannel(String(data.channelId), {
           type: 'typing:stop',
           userId,
           channelId: String(data.channelId)
         }, peer)
       }
-
     } catch (e) {
       console.error('[WS] Error processing message:', e)
     }
@@ -166,4 +161,3 @@ export default defineWebSocketHandler({
     console.error(`[WS] Error on peer ${peer.id}:`, error)
   }
 })
-

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const isInviteOpen = useState<boolean>('isInviteOpen', () => false)
+const { invite: isOpen } = useModals()
 const chatStore = useChatStore()
 const toast = useToast()
 const { t } = useI18n()
@@ -29,14 +29,14 @@ async function copyLink() {
       isCopied.value = false
     }, 2000)
   } catch (e) {
-    console.error(e)
+    handleApiError(e, 'Impossible de copier le lien.')
   }
 }
 </script>
 
 <template>
   <UModal
-    v-model:open="isInviteOpen"
+    v-model:open="isOpen"
     :close="true"
     :title="t('invite.modalTitle', { server: activeServer?.name || '' })"
   >

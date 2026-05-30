@@ -42,7 +42,10 @@ export default {
     emptyDesc2: 'to start the conversation.',
     typingSingle: 'is typing…',
     typingAnd: 'and',
-    typingMultiple: 'are typing…'
+    typingMultiple: 'are typing…',
+    confirmDelete: 'Delete this message?',
+    deleteConfirm: 'Delete',
+    deleteCancel: 'Cancel'
   },
   modal: {
     createChannelTitle: 'Create a new channel',

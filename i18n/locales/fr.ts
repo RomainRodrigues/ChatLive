@@ -42,7 +42,10 @@ export default {
     emptyDesc2: 'pour démarrer la conversation.',
     typingSingle: 'est en train d\'écrire…',
     typingAnd: 'et',
-    typingMultiple: 'écrivent…'
+    typingMultiple: 'écrivent…',
+    confirmDelete: 'Supprimer ce message ?',
+    deleteConfirm: 'Supprimer',
+    deleteCancel: 'Annuler'
   },
   modal: {
     createChannelTitle: 'Créer un nouveau salon',

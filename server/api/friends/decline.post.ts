@@ -2,21 +2,18 @@ import { db } from '../../utils/drizzle'
 import { friendships } from '../../database/schema'
 import { eq, or, and } from 'drizzle-orm'
 import { sendToUser } from '../../utils/wsRegistry'
+import { FriendActionSchema } from '../../utils/validators'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const currentUserId = session.user.id
-  const body = await readBody(event)
-
-  if (!body.friendshipId) {
-    throw createError({ statusCode: 400, statusMessage: 'friendshipId is required.' })
-  }
+  const body = await readValidatedBody(event, FriendActionSchema.parse)
 
   // Trouver la relation et vérifier que l'utilisateur y participe
   const relation = await db.select().from(friendships)
     .where(
       and(
-        eq(friendships.id, String(body.friendshipId)),
+        eq(friendships.id, body.friendshipId),
         or(
           eq(friendships.senderId, currentUserId),
           eq(friendships.receiverId, currentUserId)

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { Channel } from '~/types/chat'
 
-const isAddChannelOpen = useState<boolean>('isAddChannelOpen', () => false)
+const { createChannel: isOpen } = useModals()
 const newChannelName = ref('')
 const isCreating = ref(false)
 const chatStore = useChatStore()
 
-async function createChannel() {
+async function handleCreate() {
   if (!newChannelName.value.trim() || !chatStore.activeServerId) return
   isCreating.value = true
   try {
@@ -18,13 +18,13 @@ async function createChannel() {
       }
     })
     newChannelName.value = ''
-    isAddChannelOpen.value = false
+    isOpen.value = false
     await chatStore.fetchChannels()
     if (channel?.id) {
       await chatStore.selectChannel(channel.id)
     }
   } catch (e) {
-    console.error(e)
+    handleApiError(e, 'Impossible de créer le salon.')
   } finally {
     isCreating.value = false
   }
@@ -33,7 +33,7 @@ async function createChannel() {
 
 <template>
   <UModal
-    v-model:open="isAddChannelOpen"
+    v-model:open="isOpen"
     :close="false"
     :title="$t('modal.createChannelTitle')"
   >
@@ -48,7 +48,7 @@ async function createChannel() {
         autofocus
         maxlength="100"
         class="w-full"
-        @keyup.enter="createChannel"
+        @keyup.enter="handleCreate"
       />
     </template>
     <template #footer>
@@ -56,14 +56,14 @@ async function createChannel() {
         <UButton
           variant="ghost"
           color="neutral"
-          @click="isAddChannelOpen = false"
+          @click="isOpen = false"
         >
           {{ $t('modal.cancel') }}
         </UButton>
         <UButton
           color="primary"
           :loading="isCreating"
-          @click="createChannel"
+          @click="handleCreate"
         >
           {{ $t('modal.create') }}
         </UButton>
